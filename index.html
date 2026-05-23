@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Young Diemond – Chord Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0a;--surface:#111;--surface2:#181818;--gold:#c9a84c;--gold2:#e8c96a;--goldglow:rgba(201,168,76,0.18);--dim:#555;--text:#e8e0d0;--text2:#999;--border:#222}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:1000;opacity:.4}
+header{padding:48px 24px 0;max-width:720px;margin:0 auto}
+.brand-line{display:flex;align-items:baseline;gap:12px;margin-bottom:4px}
+.brand-yd{font-family:'Playfair Display',serif;font-weight:900;font-size:clamp(36px,8vw,64px);color:var(--gold);letter-spacing:-.02em;text-shadow:0 0 40px rgba(201,168,76,.3);line-height:1}
+.brand-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);margin-bottom:6px;box-shadow:0 0 12px var(--gold);flex-shrink:0}
+.brand-sub{font-size:10px;letter-spacing:.35em;color:var(--dim);text-transform:uppercase;margin-bottom:40px}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.3;margin:0 0 32px}
+main{max-width:720px;margin:0 auto;padding:0 24px 80px;display:flex;flex-direction:column;gap:20px}
+.section-label{font-size:9px;letter-spacing:.4em;color:var(--dim);text-transform:uppercase;margin-bottom:12px}
+.genre-grid{display:flex;flex-wrap:wrap;gap:8px}
+.genre-chip{padding:7px 14px;border:1px solid var(--border);color:var(--text2);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.06em;border-radius:2px;cursor:pointer;transition:all .15s;background:var(--surface);user-select:none}
+.genre-chip:hover{border-color:var(--gold);color:var(--gold)}
+.genre-chip.active{border-color:var(--gold);color:var(--gold);background:var(--goldglow);box-shadow:0 0 12px rgba(201,168,76,.1)}
+.free-input{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:14px 16px;border-radius:2px;outline:none;resize:none;height:72px;letter-spacing:.03em;line-height:1.6;transition:border-color .2s}
+.free-input:focus{border-color:var(--gold)}
+.free-input::placeholder{color:var(--dim)}
+.options-row{display:flex;gap:10px;flex-wrap:wrap}
+.select-wrap{flex:1;min-width:120px}
+.select-wrap select{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:11px 14px;border-radius:2px;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;letter-spacing:.05em;transition:border-color .2s}
+.select-wrap select:focus{border-color:var(--gold)}
+.select-wrap select option{background:var(--surface2)}
+.gen-btn{width:100%;padding:16px;background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.05));border:1px solid var(--gold);color:var(--gold);font-family:'Playfair Display',serif;font-size:16px;font-style:italic;letter-spacing:.05em;cursor:pointer;border-radius:2px;transition:all .2s}
+.gen-btn:hover{background:rgba(201,168,76,.2)}
+.gen-btn:disabled{opacity:.4;cursor:not-allowed}
+.loading{display:none;align-items:center;gap:12px;font-size:11px;color:var(--dim);letter-spacing:.1em;padding:4px 0}
+.loading.show{display:flex}
+.spinner{width:14px;height:14px;border:1px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.results{display:flex;flex-direction:column;gap:16px}
+.prog-card{background:var(--surface);border:1px solid var(--border);border-radius:2px;overflow:hidden;animation:fadeUp .4s ease forwards;opacity:0;transform:translateY(12px)}
+@keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+.prog-card:nth-child(2){animation-delay:.08s}
+.prog-card:nth-child(3){animation-delay:.16s}
+.prog-card:nth-child(4){animation-delay:.24s}
+.prog-card:nth-child(5){animation-delay:.32s}
+.prog-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.prog-name{font-family:'Playfair Display',serif;font-size:15px;color:var(--gold2);font-style:italic}
+.prog-tag{font-size:9px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+.prog-body{padding:18px;display:flex;flex-direction:column;gap:14px}
+.chord-row{display:flex;gap:8px;flex-wrap:wrap}
+.chord-box{min-width:56px;padding:12px 10px;background:var(--bg);border:1px solid var(--border);border-radius:2px;text-align:center;transition:border-color .15s;cursor:default}
+.chord-box:hover{border-color:var(--gold)}
+.chord-name{font-family:'Playfair Display',serif;font-size:20px;color:var(--gold);line-height:1;margin-bottom:4px}
+.chord-notes{font-size:9px;color:var(--dim);letter-spacing:.05em;line-height:1.4}
+.meta-row{display:flex;gap:20px;flex-wrap:wrap;padding-top:4px;border-top:1px solid var(--border)}
+.meta-item{display:flex;flex-direction:column;gap:3px}
+.meta-label{font-size:9px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase}
+.meta-value{font-size:14px;color:var(--text);letter-spacing:.05em}
+.meta-value.gold{color:var(--gold)}
+.vibe-text{font-size:11px;color:var(--text2);line-height:1.7;letter-spacing:.02em;border-left:2px solid var(--goldglow);padding-left:12px}
+.copy-btn{align-self:flex-start;padding:7px 14px;background:transparent;border:1px solid var(--border);color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.15em;cursor:pointer;border-radius:2px;transition:all .15s}
+.copy-btn:hover{border-color:var(--gold);color:var(--gold)}
+.copy-btn.copied{color:var(--gold);border-color:var(--gold)}
+.error-box{padding:14px 16px;background:rgba(255,60,110,.06);border:1px solid rgba(255,60,110,.3);border-radius:2px;font-size:11px;color:#ff6b8a;letter-spacing:.05em;display:none}
+@media(max-width:480px){.options-row{flex-direction:column}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand-line">
+    <div class="brand-yd">Young Diemond</div>
+    <div class="brand-dot"></div>
+  </div>
+  <div class="brand-sub">Chord Lab — Generador de Progresiones</div>
+  <div class="divider"></div>
+</header>
+<main>
+  <div>
+    <div class="section-label">Género / Subgénero</div>
+    <div class="genre-grid" id="genreGrid"></div>
+  </div>
+  <div>
+    <div class="section-label">O describe lo que necesitas</div>
+    <textarea class="free-input" id="freeText" placeholder="ej: algo oscuro para un drill de Chicago con feeling melancólico, tipo tarde de invierno..."></textarea>
+  </div>
+  <div class="options-row">
+    <div class="select-wrap">
+      <select id="keySelect">
+        <option value="">Cualquier tonalidad</option>
+        <option>C mayor</option><option>C menor</option><option>C# mayor</option><option>C# menor</option>
+        <option>D mayor</option><option>D menor</option><option>Eb mayor</option><option>Eb menor</option>
+        <option>E mayor</option><option>E menor</option><option>F mayor</option><option>F menor</option>
+        <option>F# mayor</option><option>F# menor</option><option>G mayor</option><option>G menor</option>
+        <option>Ab mayor</option><option>Ab menor</option><option>A mayor</option><option>A menor</option>
+        <option>Bb mayor</option><option>Bb menor</option><option>B mayor</option><option>B menor</option>
+      </select>
+    </div>
+    <div class="select-wrap">
+      <select id="moodSelect">
+        <option value="">Cualquier mood</option>
+        <option>Dark / Oscuro</option><option>Melancólico</option><option>Eufórico</option>
+        <option>Romántico</option><option>Agresivo</option><option>Relajado</option>
+        <option>Misterioso</option><option>Épico</option><option>Nostálgico</option><option>Motivacional</option>
+      </select>
+    </div>
+    <div class="select-wrap">
+      <select id="countSelect">
+        <option value="3">3 progresiones</option>
+        <option value="5">5 progresiones</option>
+        <option value="1">1 progresión</option>
+      </select>
+    </div>
+  </div>
+  <button class="gen-btn" id="genBtn" onclick="generate()">◆ Generar Progresiones</button>
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <span>Componiendo para Young Diemond...</span>
+  </div>
+  <div class="error-box" id="errorBox"></div>
+  <div class="results" id="results"></div>
+</main>
+<script>
+const GENRES=['Trap','Drill','Hip-Hop','R&B','Afrobeats','Reggaeton','Lo-fi','Boom Bap','Jersey Club','Dancehall','Amapiano','Pop','Soul','Funk','Gospel','Neo Soul','UK Drill','NY Drill','Chicago Drill','Brazilian Phonk','Pluggnb','Cloud Rap','Emo Rap','Latin Trap','Corridos Tumbados','Sad Drill','Dark Trap','Rage Beat'];
+let selectedGenre='';
+const grid=document.getElementById('genreGrid');
+GENRES.forEach(g=>{
+  const c=document.createElement('div');
+  c.className='genre-chip'; c.textContent=g;
+  c.onclick=()=>{ document.querySelectorAll('.genre-chip').forEach(x=>x.classList.remove('active')); c.classList.add('active'); selectedGenre=g; };
+  grid.appendChild(c);
+});
+
+async function generate(){
+  const freeText=document.getElementById('freeText').value.trim();
+  if(!selectedGenre&&!freeText){showError('Selecciona un género o describe lo que necesitas.');return;}
+  hideError();
+  setLoading(true);
+  document.getElementById('results').innerHTML='';
+  try{
+    const res=await fetch('/api/chords',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        genre:selectedGenre,
+        freeText,
+        key:document.getElementById('keySelect').value,
+        mood:document.getElementById('moodSelect').value,
+        count:document.getElementById('countSelect').value
+      })
+    });
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error||`Error ${res.status}`);
+    renderResults(data.progressions);
+  }catch(e){
+    showError(`Error: ${e.message}`);
+  }finally{
+    setLoading(false);
+  }
+}
+
+function renderResults(progressions){
+  const container=document.getElementById('results');
+  container.innerHTML='';
+  progressions.forEach((prog,i)=>{
+    const card=document.createElement('div');
+    card.className='prog-card';
+    const chordsHTML=prog.chords.map(c=>`<div class="chord-box"><div class="chord-name">${c.name}</div><div class="chord-notes">${c.notes}</div></div>`).join('');
+    const chordStr=prog.chords.map(c=>c.name).join(' – ');
+    card.innerHTML=`
+      <div class="prog-header">
+        <div class="prog-name">${prog.name}</div>
+        <div class="prog-tag">Progresión ${i+1}</div>
+      </div>
+      <div class="prog-body">
+        <div class="chord-row">${chordsHTML}</div>
+        <div class="meta-row">
+          <div class="meta-item"><div class="meta-label">BPM</div><div class="meta-value gold">${prog.bpm}</div></div>
+          <div class="meta-item"><div class="meta-label">Escala</div><div class="meta-value">${prog.scale}</div></div>
+          <div class="meta-item"><div class="meta-label">Acordes</div><div class="meta-value">${prog.chords.length}</div></div>
+        </div>
+        <div class="vibe-text">${prog.vibe}</div>
+        <button class="copy-btn" onclick="copyChords(this,'${chordStr.replace(/'/g,"\\'")}')">COPIAR ACORDES</button>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+function copyChords(btn,str){
+  navigator.clipboard.writeText(str).then(()=>{
+    btn.textContent='✓ COPIADO'; btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='COPIAR ACORDES';btn.classList.remove('copied');},2000);
+  });
+}
+
+function setLoading(on){
+  document.getElementById('loading').className=on?'loading show':'loading';
+  document.getElementById('genBtn').disabled=on;
+}
+function showError(msg){const b=document.getElementById('errorBox');b.textContent=msg;b.style.display='block';}
+function hideError(){document.getElementById('errorBox').style.display='none';}
+</script>
+</body>
+</html>
