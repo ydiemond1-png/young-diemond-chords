@@ -9,6 +9,23 @@ export default async function handler(req, res) {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'API key no configurada en Vercel' });
 
+  // BPM ranges enforced server-side — model cannot override these
+  const BPM_RANGES = {
+    'reggaeton':  { min: 70,  max: 95  },
+    'trap':       { min: 130, max: 160 },
+    'drill':      { min: 130, max: 145 },
+    'hip-hop':    { min: 80,  max: 100 },
+    'hip hop':    { min: 80,  max: 100 },
+    'r&b':        { min: 60,  max: 100 },
+    'rnb':        { min: 60,  max: 100 },
+    'afrobeat':   { min: 95,  max: 115 },
+    'pop':        { min: 100, max: 130 },
+    'latin pop':  { min: 90,  max: 120 },
+    'dancehall':  { min: 85,  max: 110 },
+    'lo-fi':      { min: 60,  max: 90  },
+    'lofi':       { min: 60,  max: 90  },
+  };
+
   try {
     const { genre, freeText, key, mood, count } = req.body;
 
@@ -18,19 +35,11 @@ export default async function handler(req, res) {
     if (key)      parts.push(`Tonalidad preferida: ${key}`);
     if (mood)     parts.push(`Mood: ${mood}`);
 
-    const bpmGuide = `
-RANGOS DE BPM OBLIGATORIOS POR GÉNERO (respétalos SIEMPRE):
-- Reggaeton: 70–95 BPM (dembow pattern, típicamente 80-90)
-- Trap: 130–160 BPM (o 65–80 si es half-time)
-- Drill: 130–145 BPM
-- Hip-Hop: 80–100 BPM
-- R&B: 60–100 BPM
-- Afrobeat: 95–115 BPM
-- Pop: 100–130 BPM
-- Dancehall: 85–110 BPM
-- Latin Pop: 90–120 BPM
-- Lo-fi: 60–90 BPM
-Si el género no está en la lista, usa un BPM lógico para ese estilo.`;
+    const genreKey = (genre || '').toLowerCase().trim();
+    const range = BPM_RANGES[genreKey];
+    const bpmInstruction = range
+      ? `- El BPM DEBE estar entre ${range.min} y ${range.max} para ${genre}. Obligatorio.`
+      : `- El BPM debe ser realista para el género indicado.`;
 
     const keyGuide = `
 TONALIDADES MÁS USADAS POR GÉNERO (úsalas si no se especifica tonalidad):
@@ -44,8 +53,6 @@ TONALIDADES MÁS USADAS POR GÉNERO (úsalas si no se especifica tonalidad):
 - Lo-fi: Dbmaj, Abmaj, Bbm, Fm (jazz-influenced)`;
 
     const prompt = `Eres un productor musical experto. Genera ${count || 3} progresiones de acordes únicas para un beat de: ${parts.join(' | ')}.
-
-${bpmGuide}
 
 ${keyGuide}
 
@@ -71,7 +78,7 @@ Reglas:
 - Cada progresión debe tener entre 3 y 6 acordes
 - Los nombres de acordes deben ser notación estándar (Am, Cmaj7, F#m, Bb, etc.)
 - Las notas deben ser las notas reales del acorde
-- El BPM DEBE estar dentro del rango indicado para el género — esto es obligatorio
+${bpmInstruction}
 - Si el usuario especificó tonalidad, úsala; si no, elige una típica del género
 - Los nombres deben ser creativos y evocadores, en español o inglés
 - Las progresiones deben sonar DIFERENTES entre sí`;
@@ -98,6 +105,16 @@ Reglas:
     const text = data.choices[0].message.content;
     const clean = text.replace(/```json|```/g, '').trim();
     const progressions = JSON.parse(clean);
+
+    // Enforce BPM server-side — if model ignored the instruction, we fix it here
+    if (range) {
+      progressions.forEach(p => {
+        if (!p.bpm || p.bpm < range.min || p.bpm > range.max) {
+          p.bpm = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+        }
+      });
+    }
+
     return res.status(200).json({ progressions });
 
   } catch(e) {
